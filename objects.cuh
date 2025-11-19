@@ -14,7 +14,6 @@ class circle {
         int radius;
         __host__ __device__ circle(int radius, point3 center) : radius(radius), center(center) { }
         __device__ bool hit_circle(int x, int y, int z) {
-            // compute squared distance from point (x,y,z) to circle center
             int dx = x - center.x();
             int dy = y - center.y();
             int dz = z - center.z();

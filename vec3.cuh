@@ -11,9 +11,9 @@ class vec3 {
     __host__ __device__ vec3() : e{0,0,0} {}
     __host__ __device__ vec3(int e0, int e1, int e2) : e{e0, e1, e2} {}
 
-    __device__ int x() const { return e[0]; }
-    __device__ int y() const { return e[1]; }
-    __device__ int z() const { return e[2]; }
+    __host__ __device__ int x() const { return e[0]; }
+    __host__ __device__ int y() const { return e[1]; }
+    __host__ __device__ int z() const { return e[2]; }
 
     __device__ vec3 operator-() const { return vec3(-e[0], -e[1], -e[2]); }
     __device__ int operator[](int i) const { return e[i]; }
@@ -43,6 +43,18 @@ class vec3 {
 
     __device__ int length_squared() const {
         return e[0]*e[0] + e[1]*e[1] + e[2]*e[2];
+    }
+
+    __host__ __device__ void translate_x(int x) {
+        e[0] += x;
+    }
+
+    __host__ __device__ void translate_y(int y) {
+        e[1] += y;
+    }
+
+    __host__ __device__ void translate_z(int z) {
+        e[2] += z;
     }
 };
 
