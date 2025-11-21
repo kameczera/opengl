@@ -12,13 +12,33 @@ extern GLuint pbo;
 extern GLuint tex;
 extern struct cudaGraphicsResource* cuda_pbo_resource;
 
-struct scene_data {
-    circle* d_circles;
-    int circles_len;
-    vec3 cam;
+circle* create_circles() {
+    vec3 center(200, 100, 1);
+    circle* circles = new circle(30, center);
+    return circles;
+}
+
+class scene {
+    public:
+        circle* d_circles;
+        int circles_len;
+        vec3 cam;
+        // int rays_len;
+        // ray* rays;
+
+
+        scene() : d_circles(nullptr), circles_len(0), cam(0, 0, 0) {
+            circles_len = 1;
+            circle* h_circles = create_circles();
+
+            cudaMalloc(&d_circles, sizeof(circle));
+            cudaMemcpy(d_circles, h_circles, sizeof(circle), cudaMemcpyHostToDevice);
+
+            delete h_circles;
+        }
 };
 
-static scene_data scene;
+extern scene* g_scene;
 
 __device__ uchar4 pack_color(int row, int col, int width, int height) {
 
@@ -35,13 +55,13 @@ __device__ uchar4 pack_color(int row, int col, int width, int height) {
     return color;
 }
 
-__global__ void renderGradient(uchar4* pixels, circle* circles, int circles_len, int width, int height, int cam_x, int cam_y) {
+__global__ void renderGradient(uchar4* pixels, int width, int height) {
     int col = blockIdx.x * blockDim.x + threadIdx.x;
     int row = blockIdx.y * blockDim.y + threadIdx.y;
     if (col >= width || row >= height) return;
     int idx = row * width + col;
-    for(int i = 0; i < circles_len; i++) {
-        if(circles[i].hit_circle(col + cam_x, row + cam_y, 0)) {
+    for(int i = 0; i < g_scene->circles_len; i++) {
+        if(g_scene->d_circles[i].hit_circle(col + g_scene->cam.x(), row + g_scene->cam.y(), g_scene->cam.z())) {
             pixels[idx] = pack_color(row, col, width, height);
         } else {
             pixels[idx] = pack_color(0, 0, width, height);
@@ -57,7 +77,7 @@ void runCuda(int width, int height) {
 
     dim3 block(32, 32);
     dim3 grid((width + block.x - 1) / block.x, (height + block.y - 1) / block.y);
-    renderGradient<<<grid, block>>>(dptr, scene.d_circles, scene.circles_len, width, height, scene.cam.x(), scene.cam.y());
+    renderGradient<<<grid, block>>>(dptr, width, height);
     cudaGraphicsUnmapResources(1, &cuda_pbo_resource, 0);
 }
 

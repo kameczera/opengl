@@ -12,6 +12,7 @@ GLuint tex = 0;
 struct cudaGraphicsResource* cuda_pbo_resource;
 static int HEIGHT = 225;
 static int WIDTH = 400;
+__managed__ scene* g_scene;
 
 void keyboard(unsigned char key, int x, int y) {
     switch (key) {
@@ -20,12 +21,12 @@ void keyboard(unsigned char key, int x, int y) {
         case 'Q':
             exit(0);
             break;
-        case 'w': scene.cam.translate_y(5); break;
-        case 's': scene.cam.translate_y(-5); break;
-        case 'a': scene.cam.translate_x(-5); break;
-        case 'd': scene.cam.translate_x(5); break;
-        case ' ': scene.cam.translate_z(5); break;
-        case 'x': scene.cam.translate_z(-5); break;
+        case 'w': g_scene->cam.translate_y(5); break;
+        case 's': g_scene->cam.translate_y(-5); break;
+        case 'a': g_scene->cam.translate_x(-5); break;
+        case 'd': g_scene->cam.translate_x(5); break;
+        case ' ': g_scene->cam.translate_z(5); break;
+        case 'x': g_scene->cam.translate_z(-5); break;
         default: break;
     }
     glutPostRedisplay();
@@ -48,29 +49,6 @@ void createTexture() {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 }
 
-circle* create_circles() {
-    vec3 center(200, 100, 1);
-    circle* circles = new circle(30, center);
-    return circles;
-}
-
-scene_data init_scene() {
-    scene_data scene;
-    scene.circles_len = 1;
-
-    circle* h_circles = create_circles();
-
-    cudaMalloc(&scene.d_circles, sizeof(circle));
-    cudaMemcpy(scene.d_circles, h_circles, sizeof(circle), cudaMemcpyHostToDevice);
-
-    vec3 cam(0, 0, 0);
-    scene.cam = cam;
-
-    delete h_circles;
-
-    return scene;
-}
-
 int main(int argc, char** argv) {
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA);
@@ -80,8 +58,9 @@ int main(int argc, char** argv) {
     glewInit();
     createPBO();
     createTexture();
+    cudaMallocManaged (&g_scene, sizeof(scene));
+    new(g_scene) scene();
 
-    scene = init_scene();
 
     glutKeyboardFunc(keyboard);
     // glutSpecialFunc(specialKeys);
