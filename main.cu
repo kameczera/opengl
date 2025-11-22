@@ -12,7 +12,7 @@ GLuint tex = 0;
 struct cudaGraphicsResource* cuda_pbo_resource;
 static int HEIGHT = 225;
 static int WIDTH = 400;
-__managed__ scene* g_scene;
+scene* g_scene;
 
 void keyboard(unsigned char key, int x, int y) {
     switch (key) {

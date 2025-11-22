@@ -55,13 +55,13 @@ __device__ uchar4 pack_color(int row, int col, int width, int height) {
     return color;
 }
 
-__global__ void renderGradient(uchar4* pixels, int width, int height) {
+__global__ void renderGradient(uchar4* pixels, int width, int height, scene* scene_ptr) {
     int col = blockIdx.x * blockDim.x + threadIdx.x;
     int row = blockIdx.y * blockDim.y + threadIdx.y;
     if (col >= width || row >= height) return;
     int idx = row * width + col;
-    for(int i = 0; i < g_scene->circles_len; i++) {
-        if(g_scene->d_circles[i].hit_circle(col + g_scene->cam.x(), row + g_scene->cam.y(), g_scene->cam.z())) {
+    for(int i = 0; i < scene_ptr->circles_len; i++) {
+        if(scene_ptr->d_circles[i].hit_circle(col + scene_ptr->cam.x(), row + scene_ptr->cam.y(), scene_ptr->cam.z())) {
             pixels[idx] = pack_color(row, col, width, height);
         } else {
             pixels[idx] = pack_color(0, 0, width, height);
@@ -69,7 +69,7 @@ __global__ void renderGradient(uchar4* pixels, int width, int height) {
     }
 }
 
-void runCuda(int width, int height) {
+void runCuda(int width, int height, scene* scene_ptr) {
     uchar4* dptr;
     size_t size;
     cudaGraphicsMapResources(1, &cuda_pbo_resource, 0);
@@ -77,7 +77,7 @@ void runCuda(int width, int height) {
 
     dim3 block(32, 32);
     dim3 grid((width + block.x - 1) / block.x, (height + block.y - 1) / block.y);
-    renderGradient<<<grid, block>>>(dptr, width, height);
+    renderGradient<<<grid, block>>>(dptr, width, height, scene_ptr);
     cudaGraphicsUnmapResources(1, &cuda_pbo_resource, 0);
 }
 
@@ -89,7 +89,7 @@ void display() {
     int height = int(width / aspect_ratio);
     height = (height < 1) ? 1 : height;
 
-    runCuda(width, height);
+    runCuda(width, height, g_scene);
 
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pbo);
     glBindTexture(GL_TEXTURE_2D, tex);
