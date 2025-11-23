@@ -21,12 +21,12 @@ void keyboard(unsigned char key, int x, int y) {
         case 'Q':
             exit(0);
             break;
-        case 'w': g_scene->cam.translate_y(5); break;
-        case 's': g_scene->cam.translate_y(-5); break;
-        case 'a': g_scene->cam.translate_x(-5); break;
-        case 'd': g_scene->cam.translate_x(5); break;
-        case ' ': g_scene->cam.translate_z(5); break;
-        case 'x': g_scene->cam.translate_z(-5); break;
+        case 'w': g_scene->cam.translate_y(1); break;
+        case 's': g_scene->cam.translate_y(-1); break;
+        case 'a': g_scene->cam.translate_x(-1); break;
+        case 'd': g_scene->cam.translate_x(1); break;
+        case ' ': g_scene->cam.translate_z(1); break;
+        case 'x': g_scene->cam.translate_z(-1); break;
         default: break;
     }
     glutPostRedisplay();
@@ -65,8 +65,6 @@ int main(int argc, char** argv) {
     glutKeyboardFunc(keyboard);
     // glutPassiveMotionFunc(passiveMotionCallback);
     // allocate managed scene and construct it in-place
-    cudaMallocManaged(&g_scene, sizeof(scene));
-    new (g_scene) scene();
     glutDisplayFunc(display);
     glutMainLoop();
 

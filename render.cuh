@@ -3,10 +3,12 @@
 
 #include "objects.cuh"
 #include "vec3.cuh"
+#include "ray.cuh"
 
 using namespace std;
 
 const float MY_PI = 3.1415; 
+// static float time = 0.0f;
 
 extern GLuint pbo;
 extern GLuint tex;
@@ -20,22 +22,28 @@ circle* create_circles() {
     return circles;
 }
 
+ray* create_rays() {
+    vec3 dir(1,0,0);
+    ray* rays = (ray*) malloc(sizeof(ray) * 3);
+    for(int i = 0; i < 3; i++) {
+        point3 pos = point3(1, 50 + i * 50, 0);
+        rays[i] = ray(pos, dir);
+    }
+    return rays;
+}
+
 class scene {
     public:
         circle* d_circles;
         int circles_len;
         vec3 cam;
-        // int rays_len;
-        // ray* rays;
-
 
         scene() : d_circles(nullptr), circles_len(0), cam(0, 0, 0) {
             circles_len = 1;
             circle* h_circles = create_circles();
-
-            cudaMalloc(&d_circles, sizeof(circle));
-            cudaMemcpy(d_circles, h_circles, sizeof(circle), cudaMemcpyHostToDevice);
-
+            cudaMalloc(&d_circles, sizeof(circle) * circles_len);
+            cudaMemcpy(d_circles, h_circles, sizeof(circle) * circles_len, cudaMemcpyHostToDevice);
+ 
             delete h_circles;
         }
 };
@@ -76,7 +84,6 @@ void runCuda(int width, int height, scene* scene_ptr) {
     size_t size;
     cudaGraphicsMapResources(1, &cuda_pbo_resource, 0);
     cudaGraphicsResourceGetMappedPointer((void**)&dptr, &size, cuda_pbo_resource);
-
     dim3 block(32, 32);
     dim3 grid((width + block.x - 1) / block.x, (height + block.y - 1) / block.y);
     renderGradient<<<grid, block>>>(dptr, width, height, scene_ptr);
@@ -84,14 +91,9 @@ void runCuda(int width, int height, scene* scene_ptr) {
 }
 
 void display() {
-    static float time = 0.0f;
-    time += .01f;
-    double aspect_ratio = 16.0 / 9.0;
-    int width = 400;
-    int height = int(width / aspect_ratio);
-    height = (height < 1) ? 1 : height;
+    // time += .01f; 
 
-    runCuda(width, height, g_scene);
+    runCuda(WIDTH, HEIGHT, g_scene);
 
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pbo);
     glBindTexture(GL_TEXTURE_2D, tex);
@@ -110,7 +112,5 @@ void display() {
     glutSwapBuffers();
     glutPostRedisplay();
 }
-
-
 
 #endif
